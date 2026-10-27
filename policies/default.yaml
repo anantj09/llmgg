@@ -1,0 +1,56 @@
+# Guardrail policy. Edit this file and POST /admin/policy/reload to apply
+# without restarting. An invalid file is rejected and the old policy stays live.
+#
+# action:    block | redact | flag   (flag = log only, let it through)
+# fail_mode: closed (block if the guard errors) | open (allow if it errors)
+version: 1
+
+# Which message roles are scanned on the way in. System prompts are written
+# by your own developers, so they are trusted by default.
+scan_roles: [user]
+
+# Put the caller's original PII back into the final response after the LLM
+# has answered using placeholders like <EMAIL_1>.
+restore_pii_in_output: true
+
+input:
+  - type: max_length
+    action: block
+    params: { max_chars: 20000 }
+
+  - type: prompt_injection
+    action: block
+    fail_mode: closed
+    params: { threshold: 0.7 }
+
+  - type: secrets
+    action: redact
+
+  - type: pii
+    action: redact
+    params:
+      entities: [EMAIL, PHONE, CREDIT_CARD, AADHAAR, PAN, SSN, IP_ADDRESS]
+
+  - type: keyword_policy
+    action: flag
+    fail_mode: open
+    params:
+      categories:
+        medical_advice: ["diagnose me", "what medicine should i take", "prescribe"]
+        financial_advice: ["which stock should i buy", "guaranteed returns"]
+
+output:
+  - type: secrets
+    action: block
+
+  - type: pii
+    action: redact
+    params:
+      entities: [EMAIL, PHONE, CREDIT_CARD, AADHAAR, PAN, SSN]
+
+  - type: keyword_policy
+    action: flag
+    fail_mode: open
+    params:
+      categories:
+        competitor_mention: ["acme corp", "globex"]
