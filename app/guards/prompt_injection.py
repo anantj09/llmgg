@@ -32,7 +32,10 @@ SIGNALS: list[tuple[str, float, re.Pattern[str]]] = [
         r"(?:system\s+prompt|system\s+message|initial\s+instructions|hidden\s+instructions|"
         r"instructions\s+you\s+were\s+given|prompt\s+above)")),
     ("persona_jailbreak", 0.8, re.compile(
-        r"\b(?:dan|do anything now|developer mode|jailbreak(?:ed)?|god mode|unfiltered mode|evil confidant)\b")),
+        r"\b(?:dan|do anything now|developer mode|jailbroken|god mode|unfiltered mode|evil confidant)\b")),
+    ("jailbreak_word", 0.4, re.compile(r"\bjailbreak\b")),  # weak alone: people ask *about* jailbreaks
+    ("unbound_by_rules", 0.7, re.compile(
+        r"\b(?:no longer|not|never)\s+(?:be\s+)?(?:bound|restricted|limited|constrained)\s+by\b")),
     ("unrestricted_roleplay", 0.7, re.compile(
         r"\b(?:pretend|act|imagine|roleplay|behave)\b.{0,40}\b(?:no|without|free (?:of|from))\s+"
         r"(?:any\s+)?(?:restrictions?|rules?|filters?|limits?|limitations|guidelines|censorship|ethics)")),
@@ -40,9 +43,9 @@ SIGNALS: list[tuple[str, float, re.Pattern[str]]] = [
     ("bypass_safety", 0.75, re.compile(
         r"\b(?:bypass|disable|turn off|circumvent|get around|evade)\b.{0,25}\b"
         r"(?:safety|filters?|guardrails?|restrictions?|content polic(?:y|ies)|moderation)")),
-    ("fake_role_marker", 0.5, re.compile(
-        r"(?:^|\s)(?:system|assistant)\s*:\s|<\|im_start\|>|<\|system\|>|\[/?inst\]|###\s*(?:system|instruction)")),
-    ("encoded_payload", 0.35, re.compile(r"\b(?:decode|base64|rot13)\b.{0,40}\b(?:execute|follow|run|obey)\b")),
+    ("chat_template_token", 0.75, re.compile(r"<\|im_start\|>|<\|system\|>|<\|im_end\|>|\[/?inst\]")),
+    ("fake_role_marker", 0.5, re.compile(r"(?:^|\s)(?:system|assistant)\s*:\s|###\s*(?:system|instruction)")),
+    ("encoded_payload", 0.7, re.compile(r"\b(?:decode|base64|rot13)\b.{0,40}\b(?:execute|follow|run|obey)\b")),
 ]
 
 _BASE64_BLOB = re.compile(r"[A-Za-z0-9+/]{120,}={0,2}")
