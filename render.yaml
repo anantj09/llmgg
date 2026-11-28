@@ -1,0 +1,24 @@
+# Render Blueprint. Dashboard -> New -> Blueprint -> pick this repo.
+#
+# Auto-deploy is OFF on purpose: the CD workflow (.github/workflows/cd.yml)
+# deploys only after CI passes, using the service's deploy hook, then
+# verifies the new commit is live with a smoke test.
+services:
+  - type: web
+    name: llm-guardrail-gateway
+    runtime: docker
+    plan: free
+    branch: main
+    autoDeployTrigger: "off"
+    healthCheckPath: /healthz
+    envVars:
+      - key: PROVIDER
+        value: openai_compatible
+      - key: UPSTREAM_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: DEFAULT_MODEL
+        value: openai/gpt-oss-20b
+      - key: UPSTREAM_API_KEY
+        sync: false          # you paste this in the Render dashboard
+      - key: GATEWAY_API_KEYS
+        generateValue: true  # Render generates a random gateway key

@@ -1,0 +1,81 @@
+# Continuous delivery: every merge to main is tested, published as a Docker
+# image, deployed to Render, and verified in production.
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Deploys run one at a time, in order. A new merge waits instead of cancelling.
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Publish image to GHCR
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha
+            type=raw,value=latest
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: GIT_SHA=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Render
+    needs: publish
+    # Skipped until you set the PRODUCTION_URL repository variable (see docs/GIT_CICD_GUIDE.md).
+    if: ${{ vars.PRODUCTION_URL != '' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}/dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trigger Render deploy of this exact commit
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::Secret RENDER_DEPLOY_HOOK_URL is not set"
+            exit 1
+          fi
+          curl -fsS -X POST "${DEPLOY_HOOK}&ref=${GITHUB_SHA}" > /dev/null
+          echo "Deploy of ${GITHUB_SHA} triggered"
+      - name: Wait for the new version, then smoke test production
+        env:
+          GATEWAY_KEY: ${{ secrets.PRODUCTION_GATEWAY_KEY }}
+        run: |
+          python3 scripts/smoke_test.py --url "${{ vars.PRODUCTION_URL }}" \
+            --expect-commit "${GITHUB_SHA}" --wait 900
