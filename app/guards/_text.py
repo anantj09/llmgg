@@ -36,7 +36,11 @@ def select_non_overlapping(spans: list[tuple[int, Span]]) -> list[Span]:
 
 
 def replace_spans(text: str, spans: list[Span], replacer: Callable[[Span], str]) -> str:
-    """Replace spans (sorted, non-overlapping) right-to-left so offsets stay valid."""
-    for span in sorted(spans, key=lambda s: s.start, reverse=True):
-        text = text[: span.start] + replacer(span) + text[span.end :]
+    """Replace non-overlapping spans. Replacements are computed left-to-right
+    (so placeholders number in reading order), then applied right-to-left so
+    earlier offsets stay valid."""
+    ordered = sorted(spans, key=lambda s: s.start)
+    replacements = [(span, replacer(span)) for span in ordered]
+    for span, new in reversed(replacements):
+        text = text[: span.start] + new + text[span.end :]
     return text
