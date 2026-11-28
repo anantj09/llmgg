@@ -1,0 +1,13 @@
+services:
+  gateway:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      - ./policies:/app/policies:ro   # edit policy on the host, then POST /admin/policy/reload
+      - gateway-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  gateway-data:
