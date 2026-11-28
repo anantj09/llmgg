@@ -39,9 +39,9 @@ def test_invalid_ip_ignored():
 def test_input_redaction_is_reversible_and_stable():
     guard = PIIGuard(action=Action.REDACT)
     ctx = RequestContext("t", stage=Stage.INPUT)
-    text = "x@y.com wrote to x@y.com again"
+    text = "x@y.com wrote to x@y.com and z@y.com"
     r = asyncio.run(guard.run(text, ctx))
-    assert r.output_text == "<EMAIL_1> wrote to <EMAIL_1> again"
+    assert r.output_text == "<EMAIL_1> wrote to <EMAIL_1> and <EMAIL_2>"
     assert ctx.restore(r.output_text) == text
 
 
