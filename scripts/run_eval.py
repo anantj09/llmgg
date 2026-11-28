@@ -39,7 +39,7 @@ PII_CASES = [
     ("Aadhaar 2345 6789 0124 please verify", {"AADHAAR"}),
     ("Write to a.b@c.io or call 9123456780", {"EMAIL", "PHONE"}),
     ("Order #4111 1111 1111 1112 shipped", set()),   # fails Luhn
-    ("Version 3.14.159.26 released", set()),          # invalid IP
+    ("Build 1.2.3.400 released", set()),             # invalid IP (octet > 255)
     ("Meeting at 10:30 in room 204", set()),
     ("The year 2024 had 366 days", set()),
 ]
