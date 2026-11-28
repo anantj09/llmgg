@@ -1,5 +1,6 @@
 """Application settings, loaded from environment variables (or a .env file)."""
 
+import os
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,6 +31,16 @@ class Settings(BaseSettings):
     # Pricing used for cost estimates (USD per 1K tokens)
     cost_per_1k_input: float = 0.000075
     cost_per_1k_output: float = 0.0003
+
+    # Commit being served. CI passes it as a Docker build arg; Render sets
+    # RENDER_GIT_COMMIT at runtime, which is used as a fallback.
+    git_sha: str = ""
+
+    @property
+    def deployed_commit(self) -> str:
+        if self.git_sha and self.git_sha != "unknown":
+            return self.git_sha
+        return os.getenv("RENDER_GIT_COMMIT", "unknown")
 
     @property
     def api_keys(self) -> set[str]:

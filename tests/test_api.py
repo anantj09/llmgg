@@ -10,6 +10,12 @@ def test_health(client):
     assert client.get("/healthz").json()["status"] == "ok"
 
 
+def test_health_reports_deployed_commit(settings):
+    settings.git_sha = "abc123"
+    with TestClient(create_app(settings)) as c:
+        assert c.get("/healthz").json()["commit"] == "abc123"
+
+
 def test_upstream_failure_returns_502(client):
     class Broken(ChatProvider):
         name = "broken"
